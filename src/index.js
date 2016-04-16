@@ -154,7 +154,7 @@ class App extends React.Component {
       <MoveGroup>
       {
         this.state.items.map(i =>
-          <Move val={i} onClick={() => this.setState({items: [5,4,3,2,1]})} key={i} />
+          <Move val={i} onClick={() => this.setState({items: [2,3,4,5,6]})} key={i} />
         )
       }
       </MoveGroup>
