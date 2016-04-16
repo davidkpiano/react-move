@@ -1,5 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import 'web-animations-js/web-animations-next-lite.min.js';
+
+import MoveGroup from './move-group';
 
 function randomString(length) {
     var result = '';
@@ -50,7 +53,7 @@ function inject(kay, styles) {
 
   return node
 }
-class Move extends React.Component {
+class _Move extends React.Component {
   constructor() {
     super();
     this.state = { style: {} }
@@ -129,9 +132,33 @@ export class MoveProvider extends React.Component {
 
 export default Move;
 
-class App extends React.Component {
+class Move extends React.Component {
+
   render() {
-    return <div>hello world</div>;
+    const { val } = this.props;
+
+    return <div className="item" onClick={this.props.onClick} key={val}>Item {val}</div>
+  }
+}
+
+class App extends React.Component {
+  constructor() {
+    super();
+
+    this.state = {
+      items: [1,2,3,4,5]
+    }
+  }
+  render() {
+    return (
+      <MoveGroup>
+      {
+        this.state.items.map(i =>
+          <Move val={i} onClick={() => this.setState({items: [5,4,3,2,1]})} key={i} />
+        )
+      }
+      </MoveGroup>
+    )
   }
 }
 
