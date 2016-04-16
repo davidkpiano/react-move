@@ -13,6 +13,6 @@ module.exports = {
   plugins: [],
   node: {
     fs: 'empty'
-  }
-  // devtool: 'inline-source-map'
+  },
+  devtool: 'inline-source-map'
 };

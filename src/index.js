@@ -140,7 +140,7 @@ class Move extends React.Component {
     if (items[moveKey+'']) {
       items[moveKey+''].enter = { effect, timing };
     } else {
-      items[moveKey+''] = { enter: { effect, timing } };
+      items[moveKey+''] = { key: moveKey, enter: { effect, timing } };
     }
 
     return <div className="item" onClick={this.props.onClick} key={val}>Item {val}</div>
@@ -157,18 +157,20 @@ class App extends React.Component {
   }
   render() {
     return (
-      <MoveGroup>
-      {
-        this.state.items.map(i =>
-          <Move val={i} onClick={() => this.setState({items: this.state.items.map(i=>i+1)})} moveKey={i}
-            key={i}
-            effect={[
-              {transform: 'translateY(100%)', opacity: 0},
-              {transform: 'translateY(0)', opacity: 1}
-            ]} timing={{duration: 1000, fill: 'both', easing: 'ease-in-out' }}/>
-        )
-      }
-      </MoveGroup>
+      <div>
+        <MoveGroup key="a">
+        {
+          this.state.items.map(i =>
+            <Move val={i} onClick={() => this.setState({items: this.state.items.map(i=>i+1)})} moveKey={i}
+              key={i}
+              effect={[
+                {transform: 'translateY(100%)', opacity: 0},
+                {transform: 'translateY(0)', opacity: 1}
+              ]} timing={{duration: 1000, fill: 'both', easing: 'ease-in-out' }}/>
+          )
+        }
+        </MoveGroup>
+      </div>
     )
   }
 }

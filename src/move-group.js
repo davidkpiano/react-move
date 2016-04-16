@@ -4,18 +4,45 @@ import difference from 'lodash/difference';
 import intersection from 'lodash/intersection';
 import filter from 'lodash/filter';
 import map from 'lodash/map';
+import { applyMiddleware, createStore } from 'redux';
+import thunk from 'redux-thunk';
 
-var aliceTumbling = [
-  { transform: 'rotate(0) translate3D(-50%, -50%, 0', color: '#000' }, 
-  { color: '#431236', offset: 0.333},
-  { transform: 'rotate(360deg) translate3D(-50%, -50%, 0)', color: '#000' }
-];
+import { update, updateAll } from './move-actions';
 
-var aliceTiming = {
-  duration: 3000,
-  iterations: Infinity
-}
 window.items = {};
+
+const initialState = {};
+
+const reducer = (state = initialState, action) => {
+  console.log(action);
+
+  switch (action.type) {
+    case 'UPDATE':
+      if (!action.key) {
+        console.log('wtf', action);
+      }
+      const key = action.key + '';
+
+      return {
+        ...state,
+        [key]: {
+          key,
+          ...state[key],
+          ...action.data,
+        }
+      }
+
+    case 'UPDATE_ALL':
+      return action.data.reduce((prev, next) => {
+        return reducer(prev, update(next.key, next));
+      }, state);
+
+    default:
+      return state;
+  }
+};
+
+window.moveStore = applyMiddleware(thunk)(createStore)(reducer);
 
 export default class MoveGroup extends React.Component {
   constructor(props) {
@@ -35,8 +62,7 @@ export default class MoveGroup extends React.Component {
 
     React.Children.forEach(children, (child) => {
       if (child && child.type.name === 'Move') {
-        console.log(child.props);
-        child && this.performEnter(child.props.moveKey+'');
+        child && this.performEnter(child.props.moveKey);
       }
     });
   }
@@ -51,13 +77,16 @@ export default class MoveGroup extends React.Component {
     const keysToLeave = difference(currentKeys, nextKeys);
     const keysToMove = intersection(currentKeys, nextKeys);
 
-    keysToEnter.forEach(key => window.items[key] = {
-      state: 'ENTER',
-    });
-    keysToLeave.forEach(key => window.items[key].state = 'LEAVE')
-    keysToMove.forEach(key => {
-      Object.assign(items[key], { state: 'MOVE', pos: items[key].node.getBoundingClientRect() })
-    });
+    // keysToEnter.forEach(key => window.items[key] = {
+    //   key: key,
+    //   state: 'ENTER'
+    // });
+    // keysToLeave.forEach(key => window.items[key].state = 'LEAVE')
+    // keysToMove.forEach(key => {
+    //   Object.assign(items[key], { state: 'MOVE', pos: items[key].node.getBoundingClientRect() })
+    // });
+
+    moveStore.dispatch(updateAll(currentKeys, nextKeys));
 
     console.group()
       console.log('Entering: ', keysToEnter);
@@ -70,7 +99,7 @@ export default class MoveGroup extends React.Component {
   }
 
   componentDidUpdate() {
-    const itemsToMove = filter(items, { state: 'MOVE' });
+    const itemsToMove = filter(moveStore.getState(), { state: 'MOVE' });
 
     itemsToMove.forEach(item => {
       const nextPos = item.node.getBoundingClientRect();
@@ -84,7 +113,7 @@ export default class MoveGroup extends React.Component {
 
       item.node.animate([
         { transform: `translateX(${dx}px) translateY(${dy}px)` },
-        { transform: `translate(0, 0)`}
+        { transform: `translateX(0) translateY(0)`}
       ], {
         duration: 1000,
         easing: 'ease-in-out'
@@ -94,7 +123,7 @@ export default class MoveGroup extends React.Component {
     const itemsToEnter = filter(items, { state: 'ENTER' });
 
     itemsToEnter.forEach(item => {
-      console.log('enter', item)
+      // console.log('enter', item)
       item.node.animate(
         item.enter.effect,
         item.enter.timing);
@@ -112,8 +141,13 @@ export default class MoveGroup extends React.Component {
   attachNode(node, key) {
     const item = items[key];
 
+    moveStore.dispatch(update(key, {
+      node: ReactDOM.findDOMNode(node),
+    }));
+
     if (!item) {
       window.items[key] = {
+        key,
         node: ReactDOM.findDOMNode(node),
       }
     } else {
