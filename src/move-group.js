@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import difference from 'lodash/difference';
 import intersection from 'lodash/intersection';
 import filter from 'lodash/filter';
+import map from 'lodash/map';
 
 var aliceTumbling = [
   { transform: 'rotate(0) translate3D(-50%, -50%, 0', color: '#000' }, 
@@ -34,7 +35,8 @@ export default class MoveGroup extends React.Component {
 
     React.Children.forEach(children, (child) => {
       if (child && child.type.name === 'Move') {
-        child && this.performEnter(child.key);
+        console.log(child.props);
+        child && this.performEnter(child.props.moveKey+'');
       }
     });
   }
@@ -42,7 +44,7 @@ export default class MoveGroup extends React.Component {
   componentWillReceiveProps(nextProps) {
     const { children } = nextProps;
 
-    const nextKeys = React.Children.map(children, (child) => child.key);
+    const nextKeys = React.Children.map(children, (child) => child.props.moveKey+'');
     const currentKeys = Object.keys(window.items);
 
     const keysToEnter = difference(nextKeys, currentKeys);
@@ -65,7 +67,6 @@ export default class MoveGroup extends React.Component {
     console.groupEnd();
 
     this.setState({ children })
-
   }
 
   componentDidUpdate() {
@@ -75,24 +76,33 @@ export default class MoveGroup extends React.Component {
       const nextPos = item.node.getBoundingClientRect();
       const prevPos = item.pos;
 
-      console.log(prevPos, nextPos);
 
       const dx = prevPos.left - nextPos.left;
       const dy = prevPos.top - nextPos.top;
+
+      if (!(dx + dy)) return;
 
       item.node.animate([
         { transform: `translateX(${dx}px) translateY(${dy}px)` },
         { transform: `translate(0, 0)`}
       ], {
-        duration: 1000
+        duration: 1000,
+        easing: 'ease-in-out'
       })
+    });
+
+    const itemsToEnter = filter(items, { state: 'ENTER' });
+
+    itemsToEnter.forEach(item => {
+      console.log('enter', item)
+      item.node.animate(
+        item.enter.effect,
+        item.enter.timing);
     })
   }
 
   performEnter(key) {
     window.items[key].state = 'ENTER';
-
-    console.log(window.items[key].node.getBoundingClientRect())
 
     // window.items[key].node.animate(
     //   aliceTumbling,
@@ -115,7 +125,7 @@ export default class MoveGroup extends React.Component {
     return React.cloneElement(
       child,
       {
-        ref: (node) => this.attachNode(node, child.key),
+        ref: (node) => this.attachNode(node, child.props.moveKey+''),
         ...child.props,
       });
   }

@@ -235,7 +235,17 @@
 	  _createClass(Move, [{
 	    key: 'render',
 	    value: function render() {
-	      var val = this.props.val;
+	      var _props = this.props;
+	      var val = _props.val;
+	      var effect = _props.effect;
+	      var timing = _props.timing;
+	      var moveKey = _props.moveKey;
+
+	      if (items[moveKey + '']) {
+	        items[moveKey + ''].enter = { effect: effect, timing: timing };
+	      } else {
+	        items[moveKey + ''] = { enter: { effect: effect, timing: timing } };
+	      }
 
 	      return _react2.default.createElement(
 	        'div',
@@ -273,8 +283,12 @@
 	        null,
 	        this.state.items.map(function (i) {
 	          return _react2.default.createElement(Move, { val: i, onClick: function onClick() {
-	              return _this7.setState({ items: [2, 3, 4, 5, 6] });
-	            }, key: i });
+	              return _this7.setState({ items: _this7.state.items.map(function (i) {
+	                  return i + 1;
+	                }) });
+	            }, moveKey: i,
+	            key: i,
+	            effect: [{ transform: 'translateY(100%)', opacity: 0 }, { transform: 'translateY(0)', opacity: 1 }], timing: { duration: 1000, fill: 'both', easing: 'ease-in-out' } });
 	        })
 	      );
 	    }
@@ -19947,6 +19961,10 @@
 
 	var _filter2 = _interopRequireDefault(_filter);
 
+	var _map = __webpack_require__(282);
+
+	var _map2 = _interopRequireDefault(_map);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -19989,7 +20007,8 @@
 
 	      _react2.default.Children.forEach(children, function (child) {
 	        if (child && child.type.name === 'Move') {
-	          child && _this2.performEnter(child.key);
+	          console.log(child.props);
+	          child && _this2.performEnter(child.props.moveKey + '');
 	        }
 	      });
 	    }
@@ -19999,7 +20018,7 @@
 	      var children = nextProps.children;
 
 	      var nextKeys = _react2.default.Children.map(children, function (child) {
-	        return child.key;
+	        return child.props.moveKey + '';
 	      });
 	      var currentKeys = Object.keys(window.items);
 
@@ -20037,22 +20056,28 @@
 	        var nextPos = item.node.getBoundingClientRect();
 	        var prevPos = item.pos;
 
-	        console.log(prevPos, nextPos);
-
 	        var dx = prevPos.left - nextPos.left;
 	        var dy = prevPos.top - nextPos.top;
 
+	        if (!(dx + dy)) return;
+
 	        item.node.animate([{ transform: 'translateX(' + dx + 'px) translateY(' + dy + 'px)' }, { transform: 'translate(0, 0)' }], {
-	          duration: 1000
+	          duration: 1000,
+	          easing: 'ease-in-out'
 	        });
+	      });
+
+	      var itemsToEnter = (0, _filter2.default)(items, { state: 'ENTER' });
+
+	      itemsToEnter.forEach(function (item) {
+	        console.log('enter', item);
+	        item.node.animate(item.enter.effect, item.enter.timing);
 	      });
 	    }
 	  }, {
 	    key: 'performEnter',
 	    value: function performEnter(key) {
 	      window.items[key].state = 'ENTER';
-
-	      console.log(window.items[key].node.getBoundingClientRect());
 
 	      // window.items[key].node.animate(
 	      //   aliceTumbling,
@@ -20078,7 +20103,7 @@
 
 	      return _react2.default.cloneElement(child, _extends({
 	        ref: function ref(node) {
-	          return _this3.attachNode(node, child.key);
+	          return _this3.attachNode(node, child.props.moveKey + '');
 	        }
 	      }, child.props));
 	    }
@@ -24293,6 +24318,94 @@
 	}
 
 	module.exports = basePropertyDeep;
+
+
+/***/ },
+/* 282 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var arrayMap = __webpack_require__(199),
+	    baseIteratee = __webpack_require__(238),
+	    baseMap = __webpack_require__(283),
+	    isArray = __webpack_require__(212);
+
+	/**
+	 * Creates an array of values by running each element in `collection` thru
+	 * `iteratee`. The iteratee is invoked with three arguments:
+	 * (value, index|key, collection).
+	 *
+	 * Many lodash methods are guarded to work as iteratees for methods like
+	 * `_.every`, `_.filter`, `_.map`, `_.mapValues`, `_.reject`, and `_.some`.
+	 *
+	 * The guarded methods are:
+	 * `ary`, `chunk`, `curry`, `curryRight`, `drop`, `dropRight`, `every`,
+	 * `fill`, `invert`, `parseInt`, `random`, `range`, `rangeRight`, `repeat`,
+	 * `sampleSize`, `slice`, `some`, `sortBy`, `split`, `take`, `takeRight`,
+	 * `template`, `trim`, `trimEnd`, `trimStart`, and `words`
+	 *
+	 * @static
+	 * @memberOf _
+	 * @since 0.1.0
+	 * @category Collection
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Array|Function|Object|string} [iteratee=_.identity]
+	 *  The function invoked per iteration.
+	 * @returns {Array} Returns the new mapped array.
+	 * @example
+	 *
+	 * function square(n) {
+	 *   return n * n;
+	 * }
+	 *
+	 * _.map([4, 8], square);
+	 * // => [16, 64]
+	 *
+	 * _.map({ 'a': 4, 'b': 8 }, square);
+	 * // => [16, 64] (iteration order is not guaranteed)
+	 *
+	 * var users = [
+	 *   { 'user': 'barney' },
+	 *   { 'user': 'fred' }
+	 * ];
+	 *
+	 * // The `_.property` iteratee shorthand.
+	 * _.map(users, 'user');
+	 * // => ['barney', 'fred']
+	 */
+	function map(collection, iteratee) {
+	  var func = isArray(collection) ? arrayMap : baseMap;
+	  return func(collection, baseIteratee(iteratee, 3));
+	}
+
+	module.exports = map;
+
+
+/***/ },
+/* 283 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var baseEach = __webpack_require__(224),
+	    isArrayLike = __webpack_require__(207);
+
+	/**
+	 * The base implementation of `_.map` without support for iteratee shorthands.
+	 *
+	 * @private
+	 * @param {Array|Object} collection The collection to iterate over.
+	 * @param {Function} iteratee The function invoked per iteration.
+	 * @returns {Array} Returns the new mapped array.
+	 */
+	function baseMap(collection, iteratee) {
+	  var index = -1,
+	      result = isArrayLike(collection) ? Array(collection.length) : [];
+
+	  baseEach(collection, function(value, key, collection) {
+	    result[++index] = iteratee(value, key, collection);
+	  });
+	  return result;
+	}
+
+	module.exports = baseMap;
 
 
 /***/ }
