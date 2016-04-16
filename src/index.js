@@ -132,16 +132,20 @@ export class MoveProvider extends React.Component {
 
 export default Move;
 
+import { update } from './move-actions';
+
 class Move extends React.Component {
 
   render() {
     const { val, effect, timing, moveKey } = this.props;
 
-    if (items[moveKey+'']) {
-      items[moveKey+''].enter = { effect, timing };
-    } else {
-      items[moveKey+''] = { key: moveKey, enter: { effect, timing } };
-    }
+    const items = moveStore.getState();
+
+    console.log('first');
+
+    // moveStore.dispatch(update(moveKey, {
+    //   enter: { effect, timing }
+    // }));
 
     return <div className="item" onClick={this.props.onClick} key={val}>Item {val}</div>
   }

@@ -71,7 +71,7 @@ export default class MoveGroup extends React.Component {
     const { children } = nextProps;
 
     const nextKeys = React.Children.map(children, (child) => child.props.moveKey+'');
-    const currentKeys = Object.keys(window.items);
+    const currentKeys = Object.keys(moveStore.getState());
 
     const keysToEnter = difference(nextKeys, currentKeys);
     const keysToLeave = difference(currentKeys, nextKeys);
@@ -88,13 +88,6 @@ export default class MoveGroup extends React.Component {
 
     moveStore.dispatch(updateAll(currentKeys, nextKeys));
 
-    console.group()
-      console.log('Entering: ', keysToEnter);
-      console.log('Leaving: ', keysToLeave);
-      console.log('Moving: ', keysToMove);
-      console.log('Items: ', items);
-    console.groupEnd();
-
     this.setState({ children })
   }
 
@@ -102,9 +95,11 @@ export default class MoveGroup extends React.Component {
     const itemsToMove = filter(moveStore.getState(), { state: 'MOVE' });
 
     itemsToMove.forEach(item => {
-      const nextPos = item.node.getBoundingClientRect();
-      const prevPos = item.pos;
+      console.log(`moving ${item.key}`)
 
+      const nextPos = item.node.getBoundingClientRect();
+
+      const prevPos = item.pos;
 
       const dx = prevPos.left - nextPos.left;
       const dy = prevPos.top - nextPos.top;
@@ -117,49 +112,41 @@ export default class MoveGroup extends React.Component {
       ], {
         duration: 1000,
         easing: 'ease-in-out'
-      })
+      });
     });
 
-    const itemsToEnter = filter(items, { state: 'ENTER' });
-
+    const itemsToEnter = filter(moveStore.getState(), { state: 'ENTER' });
     itemsToEnter.forEach(item => {
-      // console.log('enter', item)
       item.node.animate(
         item.enter.effect,
         item.enter.timing);
-    })
+    });
   }
 
   performEnter(key) {
-    window.items[key].state = 'ENTER';
-
-    // window.items[key].node.animate(
-    //   aliceTumbling,
-    //   aliceTiming)
+    moveStore.dispatch(update(key, {
+      state: 'ENTER',
+    }));
   }
 
-  attachNode(node, key) {
-    const item = items[key];
+  attachNode(node, props) {
+    const key = props.moveKey;
 
     moveStore.dispatch(update(key, {
+      with: 'node',
       node: ReactDOM.findDOMNode(node),
-    }));
-
-    if (!item) {
-      window.items[key] = {
-        key,
-        node: ReactDOM.findDOMNode(node),
+      enter: {
+        effect: props.effect,
+        timing: props.timing,
       }
-    } else {
-      window.items[key].node = ReactDOM.findDOMNode(node);
-    }
+    }));
   }
 
   renderItem(child) {
     return React.cloneElement(
       child,
       {
-        ref: (node) => this.attachNode(node, child.props.moveKey+''),
+        ref: (node) => this.attachNode(node, child.props),
         ...child.props,
       });
   }
