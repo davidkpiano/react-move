@@ -28,11 +28,11 @@ export function updateAll(currentKeys, nextKeys) {
     }));
 
     const moving = keysToMove.map((key) => {
-      console.log(key, getState().move[key])
+      console.log(key, getState()[key])
       return {      
         key,
         state: 'MOVE',
-        pos: getState().move[key].node.getBoundingClientRect()
+        pos: getState()[key].node.getBoundingClientRect()
       }
     });
 

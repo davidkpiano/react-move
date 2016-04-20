@@ -67,6 +67,10 @@ export default class MoveGroup extends React.Component {
     });
   }
 
+  componentWillUpdate() {
+    console.log('updatein');
+  }
+
   componentWillReceiveProps(nextProps) {
     const { children } = nextProps;
 
@@ -94,26 +98,7 @@ export default class MoveGroup extends React.Component {
   componentDidUpdate() {
     const itemsToMove = filter(moveStore.getState(), { state: 'MOVE' });
 
-    itemsToMove.forEach(item => {
-      console.log(`moving ${item.key}`)
-
-      const nextPos = item.node.getBoundingClientRect();
-
-      const prevPos = item.pos;
-
-      const dx = prevPos.left - nextPos.left;
-      const dy = prevPos.top - nextPos.top;
-
-      if (!(dx + dy)) return;
-
-      item.node.animate([
-        { transform: `translateX(${dx}px) translateY(${dy}px)` },
-        { transform: `translateX(0) translateY(0)`}
-      ], {
-        duration: 1000,
-        easing: 'ease-in-out'
-      });
-    });
+    this.performMove(items);
 
     const itemsToEnter = filter(moveStore.getState(), { state: 'ENTER' });
     itemsToEnter.forEach(item => {
@@ -126,7 +111,38 @@ export default class MoveGroup extends React.Component {
   performEnter(key) {
     moveStore.dispatch(update(key, {
       state: 'ENTER',
+      pos: moveStore.getState()[key].node.getBoundingClientRect()
     }));
+  }
+
+  performMove(items) {
+    items.forEach(item => {
+      const { node, key } = item;
+      console.log(`moving ${key}`)
+
+      const nextPos = node.getBoundingClientRect();
+
+      const prevPos = item.pos;
+
+      console.log(item.key, prevPos);
+
+      const dx = prevPos.left - nextPos.left;
+      const dy = prevPos.top - nextPos.top;
+
+      if (!(dx + dy)) return;
+
+      const animation = node.animate([
+        { transform: `translateX(${dx}px) translateY(${dy}px)` },
+        { transform: `translateX(0) translateY(0)`}
+      ], {
+        duration: 1000,
+        easing: 'ease-in-out'
+      });
+
+      animation.onfinish = () => moveStore.dispatch(update(key, {
+        pos: node.getBoundingClientRect()
+      }));
+    });
   }
 
   attachNode(node, props) {
@@ -142,11 +158,35 @@ export default class MoveGroup extends React.Component {
     }));
   }
 
+  handleRender(key) {
+    const items = moveStore.getState();
+    console.log('item', items[key]);
+    const node = items[key].node;
+    const prevPos = items[key].pos;
+    const nextPos = node.getBoundingClientRect();
+
+    console.log(key, prevPos);
+
+    const dx = prevPos.left - nextPos.left;
+    const dy = prevPos.top - nextPos.top;
+
+    if (!(dx + dy)) {
+      console.log('nah nothing change');
+    } else {
+      console.log('ooh now')
+      this.performMove(filter(items, ()=>true))
+    }
+  }
+
   renderItem(child) {
     return React.cloneElement(
       child,
       {
         ref: (node) => this.attachNode(node, child.props),
+        onRender: () => {
+          console.log(child.props.moveKey, child);
+          this.handleRender(child.props.moveKey)
+        },
         ...child.props,
       });
   }
